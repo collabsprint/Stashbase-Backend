@@ -25,7 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 const sessionConfig: SessionOptions = {
-  secret: process.env.SESSION_SECRET || 'dkjA957BE2CoWHSItzfyUjCuVABlRxrk',
+  secret: process.env.SESSION_SECRET || 'sessionsecret',
   cookie: { maxAge: 14 * 24 * 60 * 60 },
   resave: false,
   saveUninitialized: true

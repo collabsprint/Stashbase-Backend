@@ -1,5 +1,3 @@
-import { Model } from 'sequelize';
-
 interface PaginationOptions {
   page?: number;
   pageSize?: number;
