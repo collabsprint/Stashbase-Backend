@@ -35,22 +35,58 @@ npm start
 
 ```
 src/
-├── app.ts              # Express app setup
-├── server.ts           # Server entry point
-├── config/
-│   ├── database.ts     # Sequelize configuration
-│   └── logtoExpressConfig.ts  # Logto auth config
-├── models/
-│   └── index.ts        # Model loader
-├── helper/
-│   ├── ApiResponse.ts  # API response helpers
-│   └── paginate.ts     # Pagination utility
-└── utils/
-    ├── helpers.ts      # Helper functions
-    ├── errorHandler.ts # Error handling middleware
-    ├── logEvents.ts    # Event logging
-    ├── formatJoiError.ts # Joi error formatter
-    └── corsOptions.ts  # CORS configuration
+  config/
+    database.ts         # Sequelize instance
+    database.js
+    cloudinary.ts       # Cloudinary SDK init
+    logtoExpressConfig.ts # Logto auth config
+ controllers/
+    collectionController.ts
+    stashController.ts
+    searchController.ts
+ helpers/
+    contentType.ts      # Detect content type from URL/MIME
+    paginate.ts       # Cursor/offset pagination helpers
+    response.ts         # Standardised API response shape
+    stashGrooper.ts  # Helper to group stashes based on content type
+ middlewares/
+    auth.ts             # Logto JWT verification
+    validate.ts         # Joi/Zod request validation
+    errorHandler.ts     # Global error handler
+    asyncWrapper.ts     # Eliminate try/catch boilerplate
+ migrations/
+    20260227152716-create-users-table.ts
+    20260227152910-create-collections-table.ts
+    20260227153015-create-stashes-table.ts
+    20260227153111-create-tags-table.ts
+    20260227153211-create-stashCollections-table.ts
+    20260227153258-create-stashTags-table.ts
+  models/
+    index.ts            # All model exports + associations
+    User.ts
+    Collection.ts
+    Stash.ts
+    Tag.ts
+    StashCollection.ts  # junction: stash <-> collection
+    StashTag.ts         # junction: stash <-> tag
+  router/
+    index.ts            # mounts all routers
+    collection.routes.ts
+    stash.routes.ts
+    search.routes.ts
+  services/
+    collection.service.ts
+    stash.service.ts
+    enrichment.service.ts
+    cloudinary.service.ts
+    microlink.service.ts
+    search.service.ts
+  types/
+    index.ts            # Domain types & enums
+    express.d.ts        # Augment Express Request with user
+  utils/
+    logger.ts           # Pino logger
+    errors.ts           # Custom error classes
 ```
 
 ## 🔧 Environment Variables
@@ -74,7 +110,7 @@ See `.env.example` for required variables.
 - **ORM**: Sequelize
 - **Database**: PostgreSQL
 - **Auth**: Logto
-- **Validation**: Joi
+- **Validation**: Zod
 - **Security**: Helmet, CORS, bcryptjs
 - **Utilities**: uuid, morgan, date-fns
 
