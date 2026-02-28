@@ -39,7 +39,7 @@ src/
 ├── server.ts           # Server entry point
 ├── config/
 │   ├── database.ts     # Sequelize configuration
-│   └── logotoExpressConfig.ts  # Logto auth config
+│   └── logtoExpressConfig.ts  # Logto auth config
 ├── models/
 │   └── index.ts        # Model loader
 ├── helper/

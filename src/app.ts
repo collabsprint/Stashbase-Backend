@@ -1,40 +1,39 @@
 import 'express-async-errors';
-import 'dotenv/config';
-
-import express, { Express, Request, Response, NextFunction, ErrorRequestHandler } from 'express';
+import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
-import session, { SessionOptions } from 'express-session';
+import session from 'express-session';
 import { handleAuthRoutes, withLogto } from '@logto/express';
 
-import LogtoExpressConfig from './config/logotoExpressConfig';
+import { sequelize } from './models/index';
+
+import { logtoExpressConfig, sessionConfig } from './config/logtoExpressConfig';
+import { logger } from './utils/logger';
+import { errorHandler } from './middlewares/errorHandler';
+import { NotFoundError } from './utils/errors';
+import apiRoutes from './router/index';
 
 const app: Express = express();
 
-// Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  origin: process.env.LOGTO_BASE_URL || 'http://localhost:3000',
+  credentials: true,
 }));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-const sessionConfig: SessionOptions = {
-  secret: process.env.SESSION_SECRET || 'sessionsecret',
-  cookie: { maxAge: 14 * 24 * 60 * 60 },
-  resave: false,
-  saveUninitialized: true
-};
-
 app.use(session(sessionConfig));
-app.use(handleAuthRoutes(LogtoExpressConfig));
+app.use(handleAuthRoutes(logtoExpressConfig));
 
-app.get('/', withLogto(LogtoExpressConfig), (req: Request, res: Response) => {
+app.get('/api/health', (_req: Request, res: Response) => {
+  res.status(200).json({ success: true, message: 'Server is running' });
+});
+
+app.get('/', withLogto(logtoExpressConfig), (req: Request, res: Response) => {
   res.setHeader('content-type', 'text/html');
   if ((req as any).user?.isAuthenticated) {
     res.end(`<div>Hello ${(req as any).user?.claims?.sub}, <a href="/logto/sign-out">Sign Out</a></div>`);
@@ -43,27 +42,32 @@ app.get('/', withLogto(LogtoExpressConfig), (req: Request, res: Response) => {
   }
 });
 
-// Routes
-app.get('/api/health', (req: Request, res: Response) => {
-  res.status(200).json({ message: 'Server is running' });
+app.use('/api', apiRoutes);
+
+app.use((_req: Request, _res: Response) => {
+  throw new NotFoundError('Route not found');
 });
-
-// Error handling middleware
-const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
-  console.error(err.stack);
-  res.status((err as any)?.status || 500).json({
-    error: {
-      message: err.message || 'Internal Server Error',
-      status: (err as any)?.status || 500
-    }
-  });
-};
-
 app.use(errorHandler);
 
-// 404 handler
-app.use((req: Request, res: Response) => {
-  res.status(404).json({ error: 'Route not found' });
-});
+async function bootstrap(): Promise<void> {
+  try {
+    await sequelize.authenticate();
+    logger.info('[db] Connection established');
+
+    // if (process.env.NODE_ENV === 'development') {
+    //   await sequelize.sync({ alter: false });
+    //   logger.info('[db] Models synced');
+    // }
+
+    app.listen(process.env.PORT || 3000, () => {
+      logger.info(`[server] Listening on http://localhost:${process.env.PORT || 3000}`);
+    });
+  } catch (err) {
+    logger.fatal(`[startup] Failed to start: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
+  }
+}
+
+bootstrap();
 
 export default app;
