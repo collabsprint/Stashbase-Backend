@@ -21,7 +21,7 @@ export function inferContentType(url: string, data: MicrolinkData): ContentType 
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif'].includes(ext)) return ContentType.PHOTO;
     if (['mp4', 'webm', 'mov', 'avi'].includes(ext)) return ContentType.VIDEO;
     if (data.video?.url) return ContentType.VIDEO;
-    if (data.publisher || (data.author && data.description)) return ContentType.ARTICLE;
+    if (data.publisher || (data.author && data.description)) return ContentType.NOTE;
   } catch {
   }
   return ContentType.LINK;

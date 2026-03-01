@@ -12,6 +12,7 @@ export class StashCollection extends Model<
 > {
   declare stashId: string;
   declare collectionId: string;
+  declare isDeleted: boolean;
 
   static initialize(sequelize: Sequelize): void {
     StashCollection.init(
@@ -23,6 +24,11 @@ export class StashCollection extends Model<
         collectionId: {
           type: DataTypes.UUID,
           allowNull: false,
+        },
+        isDeleted: {
+          type: DataTypes.BOOLEAN,
+          allowNull: false,
+          defaultValue: false,
         },
       },
       {

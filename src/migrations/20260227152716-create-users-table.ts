@@ -16,6 +16,11 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       type: DataTypes.STRING(256),
       allowNull: true,
     },
+    isDeleted: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,

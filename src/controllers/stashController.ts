@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import { stashService } from '../services/stashService';
-import { ok, created, noContent } from '../helpers/response';
+import { ok, created} from '../helpers/response';
 import { ContentType } from '../types';
+import { ValidationError } from '../utils/errors';
 
 export const stashController = {
-  async list(req: Request, res: Response): Promise<void> {
-    const result = await stashService.listForUser(req.userId!, {
+  async getAllStashes(req: Request, res: Response): Promise<void> {
+    const result = await stashService.getAllStashes(req.userId!, {
       page: Number(req.query.page) || 1,
       limit: Number(req.query.limit) || 20,
       type: req.query.type as ContentType | undefined,
@@ -13,7 +14,8 @@ export const stashController = {
       dateFrom: req.query.dateFrom as string | undefined,
       dateTo: req.query.dateTo as string | undefined,
     });
-    ok(res, result);
+    
+    res.json({ success: true, data: result });
   },
 
   async getById(req: Request, res: Response): Promise<void> {
@@ -22,10 +24,10 @@ export const stashController = {
     ok(res, stash);
   },
 
-  async create(req: Request, res: Response): Promise<void> {
+  async createStash(req: Request, res: Response): Promise<void> {
     const file = (req as any).file as Express.Multer.File | undefined;
 
-    const stash = await stashService.createFromUrl(
+    const stash = await stashService.createStash(
       req.userId!,
       req.body,
       file
@@ -36,15 +38,15 @@ export const stashController = {
     created(res, { id: stash.id, status: stash.status }, 'Stash saved — enrichment in progress');
   },
 
-  async update(req: Request, res: Response): Promise<void> {
+  async updateStash(req: Request, res: Response): Promise<void> {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    const stash = await stashService.update(id, req.userId!, req.body);
+    const stash = await stashService.updateStash(id, req.userId!, req.body);
     ok(res, stash, 'Stash updated');
   },
 
-  async delete(req: Request, res: Response): Promise<void> {
+  async deleteStash(req: Request, res: Response): Promise<void> {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    await stashService.delete(id, req.userId!);
+    await stashService.deleteStash(id, req.userId!);
     ok(res, null, 'Stash deleted');
   },
 };

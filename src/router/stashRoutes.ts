@@ -23,18 +23,17 @@ const upload = multer({
 
 router.use(requireAuth);
 
-router.get('/',       asyncHandler(stashController.list));
+router.get('/', asyncHandler(stashController.getAllStashes));
 
-// POST accepts optional file upload
 router.post(
   '/',
   upload.single('file'),
   validate(createStashSchema),
-  asyncHandler(stashController.create)
+  asyncHandler(stashController.createStash)
 );
 
-router.get('/:id',    asyncHandler(stashController.getById));
-router.patch('/:id',  validate(updateStashSchema), asyncHandler(stashController.update));
-router.put('/:id/delete', asyncHandler(stashController.delete));
+router.get('/:id', asyncHandler(stashController.getById));
+router.patch('/:id', validate(updateStashSchema), asyncHandler(stashController.updateStash));
+router.put('/:id/delete', asyncHandler(stashController.deleteStash));
 
 export default router;

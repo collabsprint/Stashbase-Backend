@@ -24,7 +24,7 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       allowNull: false,
     },
     contentType: {
-      type: DataTypes.ENUM('link', 'article', 'photo', 'video', 'document'),
+      type: DataTypes.ENUM('link', 'note', 'photo', 'video', 'document'),
       allowNull: false,
       defaultValue: 'link',
     },

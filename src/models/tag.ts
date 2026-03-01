@@ -16,6 +16,7 @@ export class Tag extends Model<
   declare name: TagName;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+  declare isDeleted: CreationOptional<boolean>;
 
   static initialize(sequelize: Sequelize): void {
     Tag.init(
@@ -29,6 +30,11 @@ export class Tag extends Model<
           type: DataTypes.ENUM(...Object.values(TagName)),
           allowNull: false,
           unique: true,
+        },
+        isDeleted: {
+          type: DataTypes.BOOLEAN,
+          allowNull: false,
+          defaultValue: false,
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

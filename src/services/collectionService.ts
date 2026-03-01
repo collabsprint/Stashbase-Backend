@@ -15,7 +15,7 @@ export interface UpdateCollectionDto {
 }
 
 export const collectionService = {
-  async findAllByUser(userId: string) {
+  async getAllCollections(userId: string) {
     return Collection.findAll({
       where: { userId, isDeleted: false },
       order: [['createdAt', 'DESC']],
@@ -43,7 +43,7 @@ export const collectionService = {
     return collection;
   },
 
-  async findWithStashes(collectionId: string, userId: string) {
+  async getCollectionWithStashes(collectionId: string, userId: string) {
     const collection = await Collection.findOne({
       where: { id: collectionId, userId, isDeleted: false },
       include: [
@@ -66,17 +66,17 @@ export const collectionService = {
     };
   },
 
-  async create(userId: string, dto: CreateCollectionDto) {
+  async createCollection(userId: string, dto: CreateCollectionDto) {
     return Collection.create({ userId, name: dto.name, description: dto.description ?? null });
   },
 
-  async update(collectionId: string, userId: string, dto: UpdateCollectionDto) {
+  async updateCollection(collectionId: string, userId: string, dto: UpdateCollectionDto) {
     const collection = await collectionService.findByIdForUser(collectionId, userId);
     await collection.update(dto);
     return collectionService.findByIdForUser(collectionId, userId);
   },
 
-  async delete(collectionId: string, userId: string) {
+  async deleteCollection(collectionId: string, userId: string) {
     const collection = await collectionService.findByIdForUser(collectionId, userId);
     await collection.update({ isDeleted: true });
   },

@@ -14,6 +14,11 @@ import { QueryInterface, DataTypes } from 'sequelize';
         references: { model: 'Collections', key: 'id' },
         onDelete: 'CASCADE',
       },
+      isDeleted: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
     });
 
     await queryInterface.addIndex('StashCollections', ['stashId', 'collectionId'], {

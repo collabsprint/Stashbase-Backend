@@ -3,7 +3,6 @@ import { withLogto } from '@logto/express';
 import { logtoExpressConfig } from '../config/logtoExpressConfig';
 import { syncUserFromClaims } from '../services/userService';
 import { UnauthorizedError } from '../utils/errors';
-import { logger } from '../utils/logger';
 
 export const requireAuth = [
   withLogto(logtoExpressConfig),

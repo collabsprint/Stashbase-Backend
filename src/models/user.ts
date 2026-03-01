@@ -16,6 +16,7 @@ export class User extends Model<
   declare displayName: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+  declare isDeleted: CreationOptional<boolean>;
 
   static initialize(sequelize: Sequelize): void {
     User.init(
@@ -33,6 +34,11 @@ export class User extends Model<
         displayName: {
           type: DataTypes.STRING(256),
           allowNull: true,
+        },
+        isDeleted: {
+          type: DataTypes.BOOLEAN,
+          allowNull: false,
+          defaultValue: false,
         },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,

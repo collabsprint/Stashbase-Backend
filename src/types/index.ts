@@ -1,16 +1,17 @@
 export enum ContentType {
   LINK = 'link',
-  ARTICLE = 'article',
+  NOTE = 'note',
   PHOTO = 'photo',
   VIDEO = 'video',
   DOCUMENT = 'document',
 }
 
 export enum TagName {
-  ARTICLE = 'Article',
+  NOTE = 'Note',
   WEBSITE = 'Website',
   VIDEO = 'Video',
   PHOTO = 'Photo',
+  DOCUMENT = 'Document',
 }
 
 export enum StashStatus {
@@ -22,6 +23,7 @@ export enum StashStatus {
 export interface StashMetadata {
   title?: string;
   description?: string;
+  content?: string;
   thumbnail?: string;
   author?: string;
   publishedDate?: string;
@@ -51,4 +53,18 @@ export interface PaginatedResult<T> {
   pagination: PaginationMeta;
 }
 
-export type StashesGroupedByType = Partial<Record<ContentType, unknown[]>>;
+export interface ListStashesQuery {
+  page?:     number;
+  limit?:    number;
+  type?:     ContentType;
+  tagName?:  string;
+  dateFrom?: string;
+  dateTo?:   string;
+}
+
+export type StashGroup = {
+  count:   number;
+  stashes: unknown[];
+};
+
+export type StashesGroupedByType = Partial<Record<ContentType, StashGroup>>;

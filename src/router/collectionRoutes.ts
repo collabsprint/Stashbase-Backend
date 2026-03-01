@@ -8,11 +8,11 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.get('/', asyncHandler(collectionController.list));
-router.post('/', validate(createCollectionSchema), asyncHandler(collectionController.create));
-router.get('/:id', asyncHandler(collectionController.getById));
-router.get('/:id/stashes', asyncHandler(collectionController.getWithStashes));
-router.patch('/:id', validate(updateCollectionSchema), asyncHandler(collectionController.update));
-router.put('/:id/delete', asyncHandler(collectionController.delete));
+router.get('/', asyncHandler(collectionController.getAllCollections));
+router.post('/', validate(createCollectionSchema), asyncHandler(collectionController.createCollection));
+router.get('/:id', asyncHandler(collectionController.getCollectionById));
+router.get('/:id/stashes', asyncHandler(collectionController.getCollectionWithStashes));
+router.patch('/:id', validate(updateCollectionSchema), asyncHandler(collectionController.updateCollection));
+router.put('/:id/delete', asyncHandler(collectionController.deleteCollection));
 
 export default router;

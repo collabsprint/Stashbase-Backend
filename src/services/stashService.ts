@@ -1,8 +1,7 @@
 import { Op, WhereOptions } from 'sequelize';
-import { v4 as uuidv4 } from 'uuid';
 import { Stash, Tag, Collection, StashCollection, StashTag } from '../models/index';
-import { NotFoundError, ValidationError } from '../utils/errors';
-import { ContentType, StashStatus, StashMetadata } from '../types';
+import { NotFoundError, ValidationError, ForbiddenError } from '../utils/errors';
+import { ContentType, StashStatus, ListStashesQuery, StashMetadata } from '../types';
 import { detectContentTypeFromUrl, detectContentTypeFromMime } from '../helpers/contentType';
 import { enqueueUrlEnrichment, enqueueFileEnrichment } from './enrichmentService';
 import { deleteFile } from './cloudinaryService';
@@ -12,23 +11,29 @@ import { buildPagination } from '../helpers/paginate';
 export interface CreateStashDto {
   url: string;
   title: string;
+  content?: string;
   collectionId?: string;
   tagName?: string;
 }
 
+export interface UploadedFile {
+  buffer:       Buffer;
+  originalname: string;
+  mimetype:     string;
+}
+
 export interface UpdateStashDto {
-  title?: string;
+  url?: string | null;
+  title?: string | null;
+  content?: string | null;
   collectionId?: string | null; 
   tagName?: string | null; 
 }
 
-export interface ListStashesQuery {
-  page?: number;
-  limit?: number;
-  type?: ContentType;
-  tagName?: string;
-  dateFrom?: string;
-  dateTo?: string;
+export interface StashGroup {
+  contentType: ContentType;
+  count: number;
+  stashes: Stash[];
 }
 
 async function resolveTagIds(tagNames: string | string[]): Promise<string[]> {
@@ -37,12 +42,11 @@ async function resolveTagIds(tagNames: string | string[]): Promise<string[]> {
   if (tags.length !== names.length) {
     const found = tags.map((t) => t.name);
     const invalid = names.filter((n) => !found.includes(n as any));
-    throw new ValidationError(`Invalid tag(s): ${invalid.join(', ')}. Valid tags: Article, Website, Video, Photo`);
+    throw new ValidationError(`Invalid tag(s): ${invalid.join(', ')}. Valid tags: Note, Website, Video, Photo`);
   }
   return tags.map((t) => t.id);
 }
 
-// clears the association.
 async function syncCollections(
   stash: Stash,
   collectionIds: string | string[] | null,
@@ -74,18 +78,39 @@ async function syncTags(stash: Stash, tagNames: string | string[] | null): Promi
 
 
 const STASH_INCLUDE = [
-  { model: Tag, as: 'Tags', through: { attributes: [] } },
-  { model: Collection, as: 'Collections', through: { attributes: [] }, attributes: ['id', 'name'] },
+  { 
+    model: Tag, 
+    as: 'Tags', 
+    through: { 
+        attributes: [] 
+    },
+    attributes: 
+        [
+            'id', 
+            'name'
+        ] 
+    },
+  { 
+    model: Collection, 
+    as: 'Collections', 
+    through: { 
+        attributes: [] 
+    }, 
+        attributes: 
+        [
+            'id', 
+            'name'
+        ] 
+    },
 ];
 
-
 export const stashService = {
-  async listForUser(userId: string, query: ListStashesQuery) {
+  async getAllStashes(userId: string, query: ListStashesQuery = {}) {
     const { page = 1, limit = 20, type, tagName, dateFrom, dateTo } = query;
-    const { offset, safeLimit } = buildPagination(page, limit);
+    const { offset, safePage, safeLimit } = buildPagination(page, limit);
 
     const where: WhereOptions = { userId, isDeleted: false };
-    if (type) where.contentType = type;
+    if (type) where['contentType'] = type;
     if (dateFrom || dateTo) {
       const dateFilter: Record<symbol, Date> = {};
       if (dateFrom) dateFilter[Op.gte] = new Date(dateFrom);
@@ -100,7 +125,10 @@ export const stashService = {
           through: { attributes: [] },
           where: { name: tagName },
           required: true,
-        }]
+          attributes: ['id', 'name'],
+        },
+        { model: Collection, as: 'Collections', through: { attributes: [] }, attributes: ['id', 'name'] },
+        ]
       : STASH_INCLUDE;
 
     const { count, rows } = await Stash.findAndCountAll({
@@ -125,51 +153,86 @@ export const stashService = {
       include: STASH_INCLUDE,
     });
     if (!stash) throw new NotFoundError('Stash', stashId);
+    if (stash.userId !== userId) throw new ForbiddenError();
     return stash;
   },
 
-  async createFromUrl(userId: string, dto: CreateStashDto, file?: { buffer: Buffer; originalname: string; mimetype: string }) {
-    let parsedUrl: URL;
-    try {
-      parsedUrl = new URL(dto.url);
-    } catch {
-      throw new ValidationError('Invalid URL format');
+  async createStash(userId: string, dto: CreateStashDto, file?: UploadedFile) {
+    if (!dto.url && !file && !dto.content) {
+        throw new ValidationError('Either a url or a file or note content must be provided');
     }
 
-    const initialType = file
-      ? detectContentTypeFromMime(file.mimetype)
-      : detectContentTypeFromUrl(parsedUrl);
+    let url: string;
+    let initialType: ContentType;
+
+    if (file) {
+        // File upload — content type from MIME, URL is a placeholder until Cloudinary runs
+        initialType = detectContentTypeFromMime(file.mimetype);
+        url = `file://${file.originalname}`;
+    } else if (dto.content || dto.tagName === 'Note') {
+        initialType = ContentType.NOTE;
+        url = 'note://local';        
+    } 
+    else {
+        // URL stash — parse and detect type from extension/domain
+        let parsedUrl: URL;
+        try {
+        parsedUrl = new URL(dto.url!);
+        } catch {
+        throw new ValidationError('Invalid URL format');
+        }
+        initialType = detectContentTypeFromUrl(parsedUrl);
+        url = parsedUrl.toString();
+    }
 
     const stash = await Stash.create({
-      userId,
-      url: parsedUrl.toString(),
-      title: dto.title,
-      contentType: initialType,
-      status: file ? StashStatus.PROCESSING : StashStatus.PROCESSING,
-      metadata: {},
+        userId,
+        url:         url ?? 'note://local',
+        title:       dto.title,
+        contentType: file ? initialType : dto.content ? ContentType.NOTE : initialType,
+        status:      StashStatus.PROCESSING,
+        metadata:    dto.content ? { content: dto.content } : {}
     });
 
     if (dto.collectionId !== undefined) await syncCollections(stash, dto.collectionId, userId);
-    if (dto.tagName !== undefined) await syncTags(stash, dto.tagName);
+    if (dto.tagName !== undefined)      await syncTags(stash, dto.tagName);
 
-    if (file && (initialType === ContentType.DOCUMENT || initialType === ContentType.PHOTO || initialType === ContentType.VIDEO)) {
-      enqueueFileEnrichment(stash, file.buffer, file.originalname, initialType as any);
-    } else {
-      enqueueUrlEnrichment(stash);
+    if (file && (
+        initialType === ContentType.DOCUMENT ||
+        initialType === ContentType.PHOTO    ||
+        initialType === ContentType.VIDEO
+    )) {
+        enqueueFileEnrichment(stash, file.buffer, file.originalname, initialType as any);
+    } else if (dto.content) {
+        await stash.update({ status: StashStatus.READY });
+    }
+     else {
+        enqueueUrlEnrichment(stash);
     }
 
-    return stash;
-  },
+  return stash;
+},
 
-  async update(stashId: string, userId: string, dto: UpdateStashDto) {
+  async updateStash(stashId: string, userId: string, dto: UpdateStashDto) {
     const stash = await stashService.findByIdForUser(stashId, userId);
-    if (dto.title) await stash.update({ title: dto.title });
+    const updates: Record<string, unknown> = {};
+    if (dto.title !== undefined) updates.title = dto.title;
+    if (dto.url !== undefined) updates.url = dto.url;
+    if (dto.content !== undefined) {
+        updates.metadata = {
+        ...(stash.metadata ?? {}),
+        content: dto.content ?? undefined,
+        };
+    }
+
+    if (Object.keys(updates).length) await stash.update(updates);
     if (dto.collectionId !== undefined) await syncCollections(stash, dto.collectionId, userId);
-    if (dto.tagName !== undefined) await syncTags(stash, dto.tagName);
+    if (dto.tagName !== undefined)      await syncTags(stash, dto.tagName);
+
     return stashService.findByIdForUser(stashId, userId);
   },
 
-  async delete(stashId: string, userId: string) {
+  async deleteStash(stashId: string, userId: string) {
     const stash = await stashService.findByIdForUser(stashId, userId);
     await stash.update({ isDeleted: true });
   },

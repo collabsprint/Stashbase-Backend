@@ -17,6 +17,7 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
     name: {
       type: DataTypes.STRING(256),
       allowNull: false,
+      unique: true
     },
     description: {
       type: DataTypes.TEXT,
