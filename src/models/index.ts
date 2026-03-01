@@ -6,7 +6,18 @@ import { Tag } from './tag';
 import { StashCollection } from './stashCollection';
 import { StashTag } from './stashTag';
 
-export const sequelize = new Sequelize(
+export const sequelize = process.env.DATABASE_URL
+  ? new Sequelize(process.env.DATABASE_URL, {
+      dialect: 'postgres',
+      dialectOptions: { 
+        ssl: { 
+          require: true, 
+          rejectUnauthorized: false 
+        } 
+      },
+      logging: false,
+    })
+  : new Sequelize(
   process.env.DB_NAME  || 'stashbase',
   process.env.DB_USER  || 'postgres',
   process.env.DB_PASS  || 'password',

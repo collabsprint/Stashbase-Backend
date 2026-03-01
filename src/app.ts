@@ -6,9 +6,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import { handleAuthRoutes, withLogto } from '@logto/express';
-
 import { sequelize } from './models/index';
-
 import { logtoExpressConfig, sessionConfig } from './config/logtoExpressConfig';
 import { logger } from './utils/logger';
 import { errorHandler } from './middlewares/errorHandler';
@@ -54,10 +52,11 @@ async function bootstrap(): Promise<void> {
     await sequelize.authenticate();
     logger.info('[db] Connection established');
 
-    // if (process.env.NODE_ENV === 'development') {
-    //   await sequelize.sync({ alter: false });
-    //   logger.info('[db] Models synced');
-    // }
+    // const [info] = await sequelize.query(`
+    // SELECT current_database(), current_user, inet_server_addr()
+  // `);
+
+  // console.log("Connected to database:", info);
 
     app.listen(process.env.PORT || 3000, () => {
       logger.info(`[server] Listening on http://localhost:${process.env.PORT || 3000}`);

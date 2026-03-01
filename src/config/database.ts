@@ -1,6 +1,17 @@
 import { Sequelize } from 'sequelize';
 
-export const sequelize = new Sequelize(
+export const sequelize = process.env.DATABASE_URL
+  ? new Sequelize(process.env.DATABASE_URL, {
+      dialect: 'postgres',
+      dialectOptions: { 
+        ssl: { 
+          require: true, 
+          rejectUnauthorized: false 
+        } 
+      },
+      logging: false,
+    })
+  : new Sequelize(
   process.env.DB_NAME  || 'stashbase',
   process.env.DB_USER  || 'postgres',
   process.env.DB_PASS  || 'password',
@@ -12,4 +23,5 @@ export const sequelize = new Sequelize(
     pool:    { max: 10, min: 2, acquire: 30_000, idle: 10_000 },
     define:  { underscored: false, timestamps: true, freezeTableName: false },
   }
+  
 );
