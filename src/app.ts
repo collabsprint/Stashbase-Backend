@@ -40,6 +40,24 @@ app.get('/', withLogto(logtoExpressConfig), (req: Request, res: Response) => {
   }
 });
 
+app.get('/api/me', withLogto(logtoExpressConfig), (req: Request, res: Response) => {
+  const user = (req as any).user;
+  
+  if (!user?.isAuthenticated) {
+    res.status(401).json({ success: false, error: 'Not authenticated' });
+    return;
+  }
+
+  res.json({
+    success: true,
+    data: {
+      id:          user.claims.sub,
+      email:       user.claims.email,
+      displayName: user.claims.name,
+    }
+  });
+});
+
 app.use('/api', apiRoutes);
 
 app.use((_req: Request, _res: Response) => {
