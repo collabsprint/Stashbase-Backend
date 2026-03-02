@@ -16,7 +16,12 @@ export const logtoExpressConfig: LogtoConfig = {
 
 export const sessionConfig: SessionOptions = {
   secret: process.env.SESSION_SECRET || 'sessionsecret',
-  cookie: { maxAge: 14 * 24 * 60 * 60 },
+  cookie: { 
+    maxAge: 14 * 24 * 60 * 60 * 1000,
+    secure:   process.env.NODE_ENV === 'development',
+    httpOnly: true,
+    sameSite: 'lax'
+  },
   resave: false,
   saveUninitialized: true
 };

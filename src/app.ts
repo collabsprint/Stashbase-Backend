@@ -14,6 +14,7 @@ import { NotFoundError } from './utils/errors';
 import apiRoutes from './router/index';
 
 const app: Express = express();
+app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors({
@@ -51,8 +52,8 @@ app.get('/api/me', withLogto(logtoExpressConfig), (req: Request, res: Response) 
   res.json({
     success: true,
     data: {
-      id:          user.claims.sub,
-      email:       user.claims.email,
+      id: user.claims.sub,
+      email: user.claims.email,
       displayName: user.claims.name,
     }
   });
