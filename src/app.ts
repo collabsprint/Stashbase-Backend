@@ -15,10 +15,21 @@ import apiRoutes from './router/index';
 
 const app: Express = express();
 app.set('trust proxy', 1);
-
 app.use(helmet());
+
+const allowedOrigins = [
+  process.env.LOGTO_BASE_URL,
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: process.env.LOGTO_BASE_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 app.use(morgan('dev'));
