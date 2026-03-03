@@ -15,9 +15,16 @@ export const logtoExpressConfig: LogtoConfig = {
   appSecret: process.env.LOGTO_APP_SECRET || 'secret',
   baseUrl: process.env.LOGTO_BASE_URL || 'baseurl',
 
-  navigate: (_url, _req, res) => {
+  navigate: (url, req, res) => {
     const frontend = process.env.FRONTEND_URL || 'http://localhost:3000';
-    res.redirect(`${frontend}/dashboard`);
+
+    const redirectTo = (req.session as any)?.returnTo || '/dashboard';
+
+    if (req.path.includes('callback')) {
+      return res.redirect(`${frontend}${redirectTo}`);
+    }
+
+    return res.redirect(url);
   },
 };
 
@@ -25,7 +32,7 @@ export const sessionConfig: SessionOptions = {
   secret: process.env.SESSION_SECRET || 'sessionsecret',
   cookie: { 
     maxAge: 14 * 24 * 60 * 60 * 1000,
-    secure:   process.env.NODE_ENV === 'development',
+    secure:   process.env.NODE_ENV === 'production',
     httpOnly: true,
     sameSite: 'none'
   },
