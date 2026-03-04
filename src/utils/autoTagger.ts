@@ -1,17 +1,15 @@
-import OpenAI from 'openai';
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!
-});
-
 export async function generateAITags(text: string): Promise<string[]> {
 
-  const response = await client.chat.completions.create({
-    model: "gpt-4.1-mini",
-    messages: [
-      {
-        role: "system",
-        content: `
+  const response = await fetch(
+    "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        inputs: `
             You are a tagging engine.
 
             Extract 3-6 concise tags describing the content.
@@ -21,20 +19,24 @@ export async function generateAITags(text: string): Promise<string[]> {
             - lowercase
             - no punctuation
             - return JSON array only
-          `
-      },
-      {
-        role: "user",
-        content: text
-      }
-    ],
-    temperature: 0.2
-  });
 
-  const content = response.choices[0].message.content || "[]";
+            Content:
+            ${text}
+                    `
+                })
+                }
+            );
+
+  const data = await response.json() as any;
+
+  const output =
+    data?.[0]?.generated_text ||
+    "[]";
 
   try {
-    return JSON.parse(content);
+    const start = output.indexOf("[");
+    const end = output.lastIndexOf("]") + 1;
+    return JSON.parse(output.slice(start, end));
   } catch {
     return [];
   }

@@ -1,9 +1,3 @@
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!
-});
-
 export interface ParsedQuery {
   keywords?: string;
   contentType?: string;
@@ -12,48 +6,49 @@ export interface ParsedQuery {
 
 export async function understandSearchQuery(query: string): Promise<ParsedQuery> {
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
-    temperature: 0,
-    messages: [
-      {
-        role: "system",
-        content: `
-            You convert natural language search queries into structured search parameters.
-
-            Return JSON with:
-
-            keywords
-            contentType (link | note | photo | video | document)
-            dateFrom
-
-            Examples:
-
-            "video about docker containers"
-            {
-            "keywords": "docker containers",
-            "contentType": "video"
-            }
-
-            "that article about postgres indexes I saved last week"
-            {
-            "keywords": "postgres indexes",
-            "contentType": "link",
-            "dateFrom": "7 days ago"
-            }
-        `
+  const response = await fetch(
+    "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+        "Content-Type": "application/json"
       },
-      {
-        role: "user",
-        content: query
-      }
-    ]
-  });
+      body: JSON.stringify({
+        inputs: `
+          You convert natural language search queries into structured search parameters.
 
-  const text = completion.choices[0].message.content || "{}";
+          Return ONLY JSON with fields:
+
+          keywords
+          contentType (link | note | photo | video | document)
+          dateFrom
+
+          Examples:
+
+          video about docker containers
+          {"keywords":"docker containers","contentType":"video"}
+
+          that article about postgres indexes I saved last week
+          {"keywords":"postgres indexes","contentType":"link","dateFrom":"7 days ago"}
+
+          User query:
+          ${query}
+                  `
+                })
+              }
+            );
+
+  const data = await response.json() as any;
+
+  const text =
+    data?.[0]?.generated_text ||
+    "{}";
 
   try {
-    return JSON.parse(text);
+    const jsonStart = text.indexOf("{");
+    const jsonEnd = text.lastIndexOf("}") + 1;
+    return JSON.parse(text.slice(jsonStart, jsonEnd));
   } catch {
     return { keywords: query };
   }
