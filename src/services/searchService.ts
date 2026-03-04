@@ -23,7 +23,7 @@ export const searchService = {
     const { q, type, tagName, dateFrom, dateTo, page = 1, limit = 20 } = query;
     const { offset, safeLimit } = buildPagination(page, limit);
 
-    const where: WhereOptions = { userId };
+    const where: WhereOptions = { userId, isDeleted: false };
 
     if (type) where['contentType'] = type;
 
@@ -82,20 +82,20 @@ export const searchService = {
 
     const tagInclude = tagName
       ? [{
-          model: Tag, as: 'tags',
+          model: Tag, as: 'Tags',
           through: { attributes: [] },
           where: { name: tagName },
           required: true,
           attributes: ['id', 'name'],
         }]
-      : [{ model: Tag, as: 'tags', through: { attributes: [] }, attributes: ['id', 'name'] }];
+      : [{ model: Tag, as: 'Tags', through: { attributes: [] }, attributes: ['id', 'name'] }];
 
     const { count, rows } = await Stash.findAndCountAll({
       where,
       include: [
         ...tagInclude,
         {
-          model: Collection, as: 'collections',
+          model: Collection, as: 'Collections',
           through: { attributes: [] },
           attributes: ['id', 'name'],
         },
