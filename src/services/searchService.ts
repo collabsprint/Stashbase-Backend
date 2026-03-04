@@ -103,7 +103,7 @@ export const searchService = {
       attributes: {
         include: [[rankLiteral, 'relevanceScore']],
       },
-      order:        [[literal('relevanceScore'), 'DESC']],
+      order:        [[rankLiteral, 'DESC']],
       replacements: {
         query:    keywords ?? '',
         likeQuery: `%${keywords ?? ''}%`,
