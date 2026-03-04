@@ -20,7 +20,7 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       allowNull: false,
     },
     title: {
-      type: DataTypes.STRING(500),
+      type: DataTypes.TEXT,
       allowNull: false,
     },
     contentType: {

@@ -7,6 +7,9 @@ import { enqueueUrlEnrichment, enqueueFileEnrichment } from './enrichmentService
 import { deleteFile } from './cloudinaryService';
 import { groupStashesByType } from '../helpers/stashGrouper';
 import { buildPagination } from '../helpers/paginate';
+import { generateEmbedding } from '../utils/embeddings';
+import { sequelize } from '../models';
+import { autoTagStash } from '../services/autoTagService';
 
 export interface CreateStashDto {
   url: string;
@@ -76,6 +79,25 @@ async function syncTags(stash: Stash, tagNames: string | string[] | null): Promi
   await (stash as any).setTags(tags);
 }
 
+async function indexEmbedding(stashId: string, text: string) {
+
+  const embedding = await generateEmbedding(text);
+
+  await sequelize.query(
+    `
+    UPDATE "Stashes"
+    SET embedding = :embedding
+    WHERE id = :stashId
+    `,
+    {
+      replacements: {
+        embedding,
+        stashId
+      }
+    }
+  );
+
+}
 
 const STASH_INCLUDE = [
   { 
@@ -172,28 +194,39 @@ export const stashService = {
     } else if (dto.content || dto.tagName === 'Note') {
         initialType = ContentType.NOTE;
         url = 'note://local';        
-    } 
+        } 
     else {
         // URL stash — parse and detect type from extension/domain
         let parsedUrl: URL;
         try {
-        parsedUrl = new URL(dto.url!);
+            parsedUrl = new URL(dto.url!);
         } catch {
-        throw new ValidationError('Invalid URL format');
-        }
+            throw new ValidationError('Invalid URL format');
+            }
         initialType = detectContentTypeFromUrl(parsedUrl);
         url = parsedUrl.toString();
     }
 
     const stash = await Stash.create({
         userId,
-        url:         url ?? 'note://local',
-        title:       dto.title,
+        url: url ?? 'note://local',
+        title: dto.title,
         contentType: file ? initialType : dto.content ? ContentType.NOTE : initialType,
-        status:      StashStatus.PROCESSING,
-        metadata:    dto.content ? { content: dto.content } : {}
+        status: StashStatus.PROCESSING,
+        metadata: dto.content ? { content: dto.content } : {}
     });
 
+    const embeddingText = [
+        stash.title,
+        stash.url,
+        dto.content,
+        stash.metadata?.description,
+    ].filter(Boolean).join(" ");
+
+    await indexEmbedding(stash.id, embeddingText);
+
+    await autoTagStash(stash);
+    
     if (dto.collectionId !== undefined) await syncCollections(stash, dto.collectionId, userId);
     if (dto.tagName !== undefined)      await syncTags(stash, dto.tagName);
 
@@ -206,12 +239,12 @@ export const stashService = {
     } else if (dto.content) {
         await stash.update({ status: StashStatus.READY });
     }
-     else {
+    else {
         enqueueUrlEnrichment(stash);
     }
 
-  return stash;
-},
+    return stash;
+  },
 
   async updateStash(stashId: string, userId: string, dto: UpdateStashDto) {
     const stash = await stashService.findByIdForUser(stashId, userId);

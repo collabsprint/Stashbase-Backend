@@ -82,8 +82,8 @@ async function bootstrap(): Promise<void> {
     await sequelize.authenticate();
     logger.info('[db] Connection established');
 
-    // const [info] = await sequelize.query(`
-    // SELECT current_database(), current_user, inet_server_addr()
+  //   const [info] = await sequelize.query(`
+  //   SELECT current_database(), current_user, inet_server_addr()
   // `);
 
   // console.log("Connected to database:", info);

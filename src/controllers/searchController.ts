@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { searchService } from '../services/searchService';
+import { autocompleteService } from '../services/autoCompleteService';
 import { searchQuerySchema } from '../middlewares/validate';
 import { ok } from '../helpers/response';
 import { ValidationError } from '../utils/errors';
@@ -21,4 +22,16 @@ export const searchController = {
     const results = await searchService.search(req.userId!, data);
     ok(res, results);
   },
+
+  async autocomplete(req: Request, res: Response) {
+
+    const q = req.query.q as string;
+
+    if (!q) throw new ValidationError('Search query required');
+
+    const suggestions = await autocompleteService.autocomplete(req.userId!, q);
+
+    ok(res, suggestions);
+
+  }
 };
