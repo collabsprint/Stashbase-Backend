@@ -10,6 +10,7 @@ import { buildPagination } from '../helpers/paginate';
 import { generateEmbedding } from '../utils/embeddings';
 import { sequelize } from '../models';
 import { autoTagStash } from '../services/autoTagService';
+import { logger } from '../utils/logger';
 
 export interface CreateStashDto {
   url: string;
@@ -223,9 +224,17 @@ export const stashService = {
         stash.metadata?.description,
     ].filter(Boolean).join(" ");
 
-    await indexEmbedding(stash.id, embeddingText);
+    try {
+        await indexEmbedding(stash.id, embeddingText);
+    } catch (err) {
+        logger.warn(`[embedding] Failed for stash ${stash.id}: ${err}`);
+    }
 
-    await autoTagStash(stash);
+    try {
+        await autoTagStash(stash);
+        } catch (err) {
+        logger.warn(`[autotag] Failed for stash ${stash.id}: ${err}`);
+    }
     
     if (dto.collectionId !== undefined) await syncCollections(stash, dto.collectionId, userId);
     if (dto.tagName !== undefined)      await syncTags(stash, dto.tagName);

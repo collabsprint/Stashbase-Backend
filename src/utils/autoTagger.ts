@@ -1,7 +1,7 @@
 export async function generateAITags(text: string): Promise<string[]> {
 
   const response = await fetch(
-    "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
+    "https://api-inference.huggingface.co/models/google/flan-t5-large",
     {
       method: "POST",
       headers: {
@@ -29,13 +29,14 @@ export async function generateAITags(text: string): Promise<string[]> {
 
   const data = await response.json() as any;
 
-  const output =
-    data?.[0]?.generated_text ||
-    "[]";
+  const output = data?.generated_text ?? data?.[0]?.generated_text ?? '[]';
 
   try {
-    const start = output.indexOf("[");
-    const end = output.lastIndexOf("]") + 1;
+    const start = output.indexOf('[');
+    const end   = output.lastIndexOf(']') + 1;
+    if (start === -1) {
+      return output.split(',').map((t: string) => t.trim().toLowerCase()).filter(Boolean).slice(0, 6);
+    }
     return JSON.parse(output.slice(start, end));
   } catch {
     return [];

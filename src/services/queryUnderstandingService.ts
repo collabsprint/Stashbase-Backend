@@ -7,7 +7,7 @@ export interface ParsedQuery {
 export async function understandSearchQuery(query: string): Promise<ParsedQuery> {
 
   const response = await fetch(
-    "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
+    'https://api-inference.huggingface.co/models/google/flan-t5-large',
     {
       method: "POST",
       headers: {
@@ -40,15 +40,12 @@ export async function understandSearchQuery(query: string): Promise<ParsedQuery>
             );
 
   const data = await response.json() as any;
-
-  const text =
-    data?.[0]?.generated_text ||
-    "{}";
+  const text = data?.generated_text ?? data?.[0]?.generated_text ?? '{}';
 
   try {
-    const jsonStart = text.indexOf("{");
-    const jsonEnd = text.lastIndexOf("}") + 1;
-    return JSON.parse(text.slice(jsonStart, jsonEnd));
+    const start = text.indexOf('{');
+    const end   = text.lastIndexOf('}') + 1;
+    return JSON.parse(text.slice(start, end));
   } catch {
     return { keywords: query };
   }
