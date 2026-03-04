@@ -9,7 +9,7 @@ import { groupStashesByType } from '../helpers/stashGrouper';
 import { buildPagination } from '../helpers/paginate';
 import { generateEmbedding } from '../utils/embeddings';
 import { sequelize } from '../models';
-import { autoTagStash } from '../services/autoTagService';
+// import { autoTagStash } from '../services/autoTagService';
 
 export interface CreateStashDto {
   url: string;
@@ -216,16 +216,16 @@ export const stashService = {
         metadata: dto.content ? { content: dto.content } : {}
     });
 
-    const embeddingText = [
-        stash.title,
-        stash.url,
-        dto.content,
-        stash.metadata?.description,
-    ].filter(Boolean).join(" ");
+    // const embeddingText = [
+    //     stash.title,
+    //     stash.url,
+    //     dto.content,
+    //     stash.metadata?.description,
+    // ].filter(Boolean).join(" ");
 
-    await indexEmbedding(stash.id, embeddingText);
+    // await indexEmbedding(stash.id, embeddingText);
 
-    await autoTagStash(stash);
+    // await autoTagStash(stash);
     
     if (dto.collectionId !== undefined) await syncCollections(stash, dto.collectionId, userId);
     if (dto.tagName !== undefined)      await syncTags(stash, dto.tagName);
