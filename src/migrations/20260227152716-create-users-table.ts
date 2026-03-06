@@ -16,6 +16,10 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
       type: DataTypes.STRING(256),
       allowNull: true,
     },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     isDeleted: {
       type: DataTypes.BOOLEAN,
       allowNull: false,

@@ -1,7 +1,6 @@
 import { Op } from 'sequelize';
 import { Collection, Stash, Tag, StashCollection } from '../models/index';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
-import { ContentType } from '../types';
 import { groupStashesByType } from '../helpers/stashGrouper';
 
 export interface CreateCollectionDto {
@@ -50,7 +49,11 @@ export const collectionService = {
         {
           model: Stash,
           as: 'Stashes',
-          through: { attributes: [] }, 
+          where: { isDeleted: false },
+          through: { 
+            where: { isDeleted: false },
+            attributes: [] 
+          }, 
           include: [{ model: Tag, as: 'Tags', through: { attributes: [] } }],
           order: [['createdAt', 'DESC']],
         },

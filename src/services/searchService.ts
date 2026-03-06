@@ -2,8 +2,7 @@ import { Op, WhereOptions, literal } from 'sequelize';
 import { Stash, Tag, Collection } from '../models';
 import { ContentType } from '../types';
 import { buildPagination } from '../helpers/paginate';
-import { generateEmbedding } from '../utils/embeddings';
-import { understandSearchQuery } from './queryUnderstandingService';
+import { generateEmbedding, generateAITags, understandSearchQuery } from '../helpers/aiHelpers';
 import { logger } from '../utils/logger';
 
 export interface SearchQuery {

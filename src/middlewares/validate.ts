@@ -14,6 +14,17 @@ export function validate(schema: ZodSchema) {
   };
 }
 
+export const registerSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  displayName: z.string().min(1, 'Display name is required').max(100, 'Display name must be under 100 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters').max(100, 'Password must be under 100 characters'),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters').max(100, 'Password must be under 100 characters'),
+});
+
 export const createCollectionSchema = z.object({
   name: z.string().min(1, 'Name is required').max(256, 'Name must be under 256 characters'),
   description: z.string().max(1000).optional(),

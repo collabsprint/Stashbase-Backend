@@ -14,6 +14,7 @@ export class User extends Model<
   declare id: string;
   declare email: CreationOptional<string | null>;
   declare displayName: CreationOptional<string | null>;
+  declare password: string;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
   declare isDeleted: CreationOptional<boolean>;
@@ -34,6 +35,10 @@ export class User extends Model<
         displayName: {
           type: DataTypes.STRING(256),
           allowNull: true,
+        },
+        password: {
+          type: DataTypes.STRING,
+          allowNull: false,
         },
         isDeleted: {
           type: DataTypes.BOOLEAN,

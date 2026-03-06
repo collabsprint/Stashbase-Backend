@@ -1,13 +1,13 @@
 import { Op, WhereOptions } from 'sequelize';
 import { Stash, Tag, Collection, StashCollection, StashTag } from '../models/index';
-import { NotFoundError, ValidationError, ForbiddenError } from '../utils/errors';
+import { NotFoundError, ValidationError, ForbiddenError, ConflictError } from '../utils/errors';
 import { ContentType, StashStatus, ListStashesQuery, StashMetadata } from '../types';
 import { detectContentTypeFromUrl, detectContentTypeFromMime } from '../helpers/contentType';
 import { enqueueUrlEnrichment, enqueueFileEnrichment } from './enrichmentService';
 import { deleteFile } from './cloudinaryService';
 import { groupStashesByType } from '../helpers/stashGrouper';
 import { buildPagination } from '../helpers/paginate';
-import { generateEmbedding } from '../utils/embeddings';
+import { generateEmbedding } from '../helpers/aiHelpers';
 import { sequelize } from '../models';
 import { autoTagStash } from '../services/autoTagService';
 import { logger } from '../utils/logger';
@@ -208,6 +208,37 @@ export const stashService = {
         url = parsedUrl.toString();
     }
 
+    const isGenericUrl = url.startsWith('note://') || url.startsWith('file://');
+
+    const duplicate = await Stash.findOne({
+        where: { isDeleted: false,
+        userId,
+        [Op.or]: [
+            ...(!isGenericUrl ? [{ url }] : []),
+            ...(dto.title && dto.tagName ? [{ title: dto.title }] : []),
+        ],
+        },
+        include: dto.tagName ? [{
+        model: Tag,
+        as: 'Tags',
+        through: { attributes: [] },
+        where: { name: dto.tagName },
+        required: true,
+        }] : [],
+    });
+
+    if (duplicate) {
+        if (!isGenericUrl && duplicate.url === url) {
+        throw new ConflictError('You have already stashed this URL');
+        }
+        if (duplicate.title.toLowerCase() === dto.title.toLowerCase() && dto.tagName !== undefined) {
+        throw new ConflictError(
+            `You already have a stash titled "${dto.title}" with the tag "${dto.tagName}". ` +
+            `Use a different tag to save it separately.`
+        );
+        }
+    }
+
     const stash = await Stash.create({
         userId,
         url: url ?? 'note://local',
@@ -277,5 +308,10 @@ export const stashService = {
   async deleteStash(stashId: string, userId: string) {
     const stash = await stashService.findByIdForUser(stashId, userId);
     await stash.update({ isDeleted: true });
+
+    await StashCollection.update(
+    { isDeleted: true },
+    { where: { stashId } }
+  );
   },
 };

@@ -25,8 +25,6 @@ function getResourceType(contentType: ContentType): CloudinaryResourceType {
   return 'image'; 
 }
 
-// ─── Upload ───────────────────────────────────────────────────────────────────
-
 export async function uploadFile(
   buffer: Buffer,
   filename: string,

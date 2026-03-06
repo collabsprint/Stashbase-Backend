@@ -4,10 +4,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
-import session from 'express-session';
-import { handleAuthRoutes, withLogto } from '@logto/express';
+// import session from 'express-session';
+// import { handleAuthRoutes, withLogto } from '@logto/express';
 import { sequelize } from './models/index';
-import { logtoExpressConfig, sessionConfig } from './config/logtoExpressConfig';
+// import { logtoExpressConfig, sessionConfig } from './config/logtoExpressConfig';
 import { logger } from './utils/logger';
 import { errorHandler } from './middlewares/errorHandler';
 import { NotFoundError } from './utils/errors';
@@ -18,8 +18,8 @@ app.set('trust proxy', 1);
 app.use(helmet());
 
 const allowedOrigins = [
-  process.env.LOGTO_BASE_URL,
-  'http://localhost:3000'
+  process.env.LOGTO_BASE_URL || 'http://localhost:3000',
+  process.env.FRONTEND_URL || 'http://localhost:3000'
 ];
 
 app.use(cors({
@@ -36,39 +36,41 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(session(sessionConfig));
-app.use(handleAuthRoutes(logtoExpressConfig));
+// app.use(session(sessionConfig));
+
+
+// app.use(handleAuthRoutes(logtoExpressConfig));
 
 app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({ success: true, message: 'Server is running' });
 });
 
-app.get('/', withLogto(logtoExpressConfig), (req: Request, res: Response) => {
-  res.setHeader('content-type', 'text/html');
-  if ((req as any).user?.isAuthenticated) {
-    res.end(`<div>Hello ${(req as any).user?.claims?.sub}, <a href="/logto/sign-out">Sign Out</a></div>`);
-  } else {
-    res.end('<div><a href="/logto/sign-in">Sign In</a></div>');
-  }
-});
+// app.get('/', withLogto(logtoExpressConfig), (req: Request, res: Response) => {
+//   res.setHeader('content-type', 'text/html');
+//   if ((req as any).user?.isAuthenticated) {
+//     res.end(`<div>Hello ${(req as any).user?.claims?.sub}, <a href="/logto/sign-out">Sign Out</a></div>`);
+//   } else {
+//     res.end('<div><a href="/logto/sign-in">Sign In</a></div>');
+//   }
+// });
 
-app.get('/api/me', withLogto(logtoExpressConfig), (req: Request, res: Response) => {
-  const user = (req as any).user;
+// app.get('/api/me', withLogto(logtoExpressConfig), (req: Request, res: Response) => {
+//   const user = (req as any).user;
   
-  if (!user?.isAuthenticated) {
-    res.status(401).json({ success: false, error: 'Not authenticated' });
-    return;
-  }
+//   if (!user?.isAuthenticated) {
+//     res.status(401).json({ success: false, error: 'Not authenticated' });
+//     return;
+//   }
 
-  res.json({
-    success: true,
-    data: {
-      id: user.claims.sub,
-      email: user.claims.email,
-      displayName: user.claims.name,
-    }
-  });
-});
+//   res.json({
+//     success: true,
+//     data: {
+//       id: user.claims.sub,
+//       email: user.claims.email,
+//       displayName: user.claims.name,
+//     }
+//   });
+// });
 
 app.use('/api', apiRoutes);
 

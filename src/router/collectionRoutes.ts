@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { collectionController } from '../controllers/collectionController';
-import { requireAuth } from '../middlewares/auth';
+import { authenticate } from '../middlewares/authenticate';
 import { validate, createCollectionSchema, updateCollectionSchema } from '../middlewares/validate';
 import { asyncHandler } from '../middlewares/asyncHandler';
 
 const router = Router();
 
-router.use(requireAuth);
+router.use(authenticate);
 
 router.get('/', asyncHandler(collectionController.getAllCollections));
 router.post('/', validate(createCollectionSchema), asyncHandler(collectionController.createCollection));

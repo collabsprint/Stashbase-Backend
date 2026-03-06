@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { searchController } from '../controllers/searchController';
-import { requireAuth } from '../middlewares/auth';
+import { authenticate } from '../middlewares/authenticate';
 import { asyncHandler } from '../middlewares/asyncHandler';
 
 const router = Router();
 
-router.use(requireAuth);
+router.use(authenticate);
 router.get('/', asyncHandler(searchController.search));
 
 export default router;

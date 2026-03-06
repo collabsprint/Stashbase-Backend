@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { stashController } from '../controllers/stashController';
-import { requireAuth } from '../middlewares/auth';
+import { authenticate } from '../middlewares/authenticate';
 import { validate, createStashSchema, updateStashSchema } from '../middlewares/validate';
 import { asyncHandler } from '../middlewares/asyncHandler';
 
@@ -21,7 +21,7 @@ const upload = multer({
   },
 });
 
-router.use(requireAuth);
+router.use(authenticate);
 
 router.get('/', asyncHandler(stashController.getAllStashes));
 

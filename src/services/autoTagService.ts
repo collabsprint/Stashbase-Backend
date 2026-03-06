@@ -1,5 +1,5 @@
 import { Tag } from '../models';
-import { generateAITags } from '../utils/autoTagger';
+import { generateAITags } from '../helpers/aiHelpers';
 
 export async function autoTagStash(stash: any) {
 

@@ -8,7 +8,7 @@ export async function up(queryInterface: QueryInterface): Promise<void> {
 
   await queryInterface.sequelize.query(`
     ALTER TABLE "Stashes"
-    ADD COLUMN embedding vector(1536);
+    ADD COLUMN embedding vector(768);
   `);
 
   await queryInterface.sequelize.query(`
