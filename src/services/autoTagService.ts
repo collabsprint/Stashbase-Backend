@@ -1,32 +1,33 @@
-import { Tag } from '../models';
 import { generateAITags } from '../helpers/aiHelpers';
+import { logger } from '../utils/logger';
 
 export async function autoTagStash(stash: any) {
-
   const text = [
     stash.title,
     stash.metadata?.description,
-    stash.metadata?.extractedText
-  ].filter(Boolean).join(" ");
+    stash.metadata?.extractedText,
+    stash.metadata?.content,
+  ].filter(Boolean).join(' ');
 
-  if (!text) return;
+  logger.info(`[autotag] stash=${stash.id} text="${text.slice(0, 100)}"`);
+
+  if (!text) {
+    logger.warn(`[autotag] No text to tag for stash ${stash.id}`);
+    return;
+  }
 
   const tags = await generateAITags(text);
 
-  if (!tags.length) return;
-
-  const tagModels = [];
-
-  for (const tagName of tags) {
-
-    const [tag] = await Tag.findOrCreate({
-      where: { name: tagName.toLowerCase() }
-    });
-
-    tagModels.push(tag);
-
+  logger.info(`[autotag] stash=${stash.id} generated tags=${JSON.stringify(tags)}`);
+  
+  if (!tags.length) {
+    logger.warn(`[autotag] No tags generated for stash ${stash.id}`);
+    return;
   }
 
-  await stash.setTags(tagModels);
+  await stash.update({
+    metadata: { ...stash.metadata, aiTags: tags },
+  });
 
+  logger.info(`[autotag] stash=${stash.id} saved aiTags successfully`);
 }

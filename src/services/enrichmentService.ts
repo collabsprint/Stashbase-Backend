@@ -4,11 +4,21 @@ import { fetchUrlMetadata } from './microlinkService';
 import { uploadFile, buildThumbnailUrl } from './cloudinaryService';
 import { StashMetadata, ContentType, StashStatus } from '../types';
 import { logger } from '../utils/logger';
+import { autoTagStash } from './autoTagService';
 
 async function processUrl(stash: Stash): Promise<void> {
   try {
     const { metadata, contentType } = await fetchUrlMetadata(stash.url);
+
     await stash.update({ metadata, contentType, status: StashStatus.READY });
+
+    await stash.reload();
+
+    try {
+      await autoTagStash(stash);
+    } catch (err) {
+      logger.warn(`[autotag] Failed for stash ${stash.id}: ${err}`);
+    }
   } catch (err) {
     logger.warn({ stashId: stash.id, err }, '[enrichment] Microlink failed — degraded save');
     await stash.update({

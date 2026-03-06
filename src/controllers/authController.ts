@@ -13,6 +13,17 @@ export const login = async (req: Request, res: Response) => {
   res.json({ success: true, data: result });
 };
 
+export const refresh = async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+
+  if(!refreshToken) {
+    res.status(400).json({ success: false, error: 'Refresh token is required' });
+    return;
+  }
+  const tokens = await authService.refresh(refreshToken);
+  res.json({ success: true, data: tokens });
+}
+
 export const logout = async (req: Request, res: Response) => {
   const token    = (req as any).token    as string;
   const tokenExp = (req as any).tokenExp as number;

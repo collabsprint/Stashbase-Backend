@@ -1,8 +1,8 @@
 import argon2  from 'argon2';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../models/index';
-import { signAccessToken, signRefreshToken } from '../helpers/jwtHelper';
-import { blacklistToken }  from '../utils/tokenBlacklist';
+import { signAccessToken, signRefreshToken, verifyToken } from '../helpers/jwtHelper';
+import { blacklistToken, isBlacklisted }  from '../utils/tokenBlacklist';
 import {
   ConflictError,
   UnauthorizedError,
@@ -37,6 +37,26 @@ export async function login(email: string, password: string) {
 
   const tokens = issueTokens(user);
   return { user: sanitize(user), ...tokens };
+}
+
+export async function refresh(refreshToken: string) {
+  if (isBlacklisted(refreshToken)) {
+    throw new UnauthorizedError('Refresh token has been invalidated. Please log in again.');
+  }
+
+  let payload;
+  try {
+    payload = verifyToken(refreshToken);
+  } catch {
+    throw new UnauthorizedError('Invalid or expired refresh token');
+  }
+
+  const user = await User.findOne({ where: { id: payload.sub, isDeleted: false } });
+  if (!user) throw new UnauthorizedError('User no longer exists');
+
+  blacklistToken(refreshToken, payload.exp!);
+
+  return issueTokens(user);
 }
 
 export async function logout(token: string, tokenExp: number) {

@@ -81,23 +81,21 @@ async function syncTags(stash: Stash, tagNames: string | string[] | null): Promi
 }
 
 async function indexEmbedding(stashId: string, text: string) {
-
   const embedding = await generateEmbedding(text);
 
   await sequelize.query(
     `
     UPDATE "Stashes"
-    SET embedding = :embedding
+    SET embedding = :embedding::vector
     WHERE id = :stashId
     `,
     {
       replacements: {
-        embedding,
-        stashId
-      }
+        embedding: `[${embedding.join(',')}]`,
+        stashId,
+      },
     }
   );
-
 }
 
 const STASH_INCLUDE = [
@@ -260,12 +258,6 @@ export const stashService = {
     } catch (err) {
         logger.warn(`[embedding] Failed for stash ${stash.id}: ${err}`);
     }
-
-    try {
-        await autoTagStash(stash);
-        } catch (err) {
-        logger.warn(`[autotag] Failed for stash ${stash.id}: ${err}`);
-    }
     
     if (dto.collectionId !== undefined) await syncCollections(stash, dto.collectionId, userId);
     if (dto.tagName !== undefined)      await syncTags(stash, dto.tagName);
@@ -278,6 +270,15 @@ export const stashService = {
         enqueueFileEnrichment(stash, file.buffer, file.originalname, initialType as any);
     } else if (dto.content) {
         await stash.update({ status: StashStatus.READY });
+
+        try {
+        await autoTagStash({ 
+            ...stash.toJSON(), 
+            metadata: { content: dto.content } 
+        });
+        } catch (err) {
+            logger.warn(`[autotag] Failed for stash ${stash.id}: ${err}`);
+        }
     }
     else {
         enqueueUrlEnrichment(stash);

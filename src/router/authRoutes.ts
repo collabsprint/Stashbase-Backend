@@ -8,11 +8,12 @@ import { registerSchema, loginSchema } from '../middlewares/validate';
 const router = Router();
 
 router.post('/register', validate(registerSchema), asyncHandler(authController.register));
-router.post('/login',    validate(loginSchema),    asyncHandler(authController.login));
+router.post('/login', validate(loginSchema), asyncHandler(authController.login));
+router.post('/refresh', asyncHandler(authController.refresh));
 
-router.post('/logout',   authenticate, asyncHandler(authController.logout));
-router.get('/me',        authenticate, asyncHandler(authController.getSignedInUser));
-router.get('/users',     authenticate, asyncHandler(authController.getAllUsers));
+router.post('/logout', authenticate, asyncHandler(authController.logout));
+router.get('/me', authenticate, asyncHandler(authController.getSignedInUser));
+router.get('/users', authenticate, asyncHandler(authController.getAllUsers));
 router.get('/users/:id', authenticate, asyncHandler(authController.getUserById));
 
 export default router;
